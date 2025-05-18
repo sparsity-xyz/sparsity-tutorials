@@ -1,176 +1,165 @@
-# AG2 Coinbot Tutorial
+# Secure Communication with Trusted Execution Environment (TEE) Tutorial
 
-This tutorial explains the implementation of AG2 Coinbot, a simple agent-based system for cryptocurrency research.
+This tutorial will guide you through implementing a client application that communicates securely with a Trusted Execution Environment (TEE) endpoint for chatbot requests. You'll learn how to establish secure communication, verify TEE attestation, and encrypt/decrypt messages.
 
-## Overview
+## Prerequisites
 
-AG2 Coinbot follows a multi-step process to research cryptocurrency information:
+- Basic understanding of cryptography concepts
+- Familiarity with Python programming
+- Understanding of REST API calls
 
-1. **Get user prompt**: Accept a question or topic about cryptocurrencies from the user
-2. **Generate search URLs**: Use LLM to identify relevant websites for research
-3. **Retrieve website data**: Fetch and clean HTML content from those websites
-4. **Analyze individual sources**: Summarize each source with respect to the user's question
-5. **Create comprehensive summary**: Combine all source analyses into a final report
+## Working Environment
 
-## Step-by-Step Implementation
+For this tutorial, you'll be working in the `tee-tee-tls/local/workspace` directory. This directory contains the necessary utility files and skeleton code that you'll be implementing.
 
-### Step 1: User Prompt
+## Project Structure
 
-The workflow begins with the user providing a cryptocurrency-related question or research topic. This happens in the `main()` function where we use `input()` to get the user's query:
+- `main.py`: This is where you'll implement the `ClientRequest` class
+- `util/`: Directory containing helper utilities:
+  - `signer.py`: Provides encryption and signing capabilities
+  - `verifier.py`: Offers verification functionality for attestation and signatures
+- `requirements.txt`: Lists the required dependencies
 
-```python
-user_input = input("What cryptocurrency information would you like to research? ")
+## What is TEE?
+
+A Trusted Execution Environment (TEE) is a secure area inside a processor that ensures confidentiality and integrity of code and data loaded inside it. By using a TEE, you can be confident that sensitive operations are executed in a protected environment isolated from the main operating system.
+
+## Setup
+
+Before we begin coding, ensure you have the required dependencies installed:
+
+```bash
+pip install -r requirements.txt
 ```
 
-### Step 2: Generate Search URLs
+You'll also need to set the following environment variables:
 
-Next, we use an LLM (GPT-4o in this case) to generate a list of relevant URLs that might contain information to answer the user's query. We implement this in the `generate_search_urls()` function:
+```bash
+export PLATFORM_API_KEY="your_api_key"
+export PLATFORM="your_platform"
+export MODEL="your_model"
+export TEE_TLS_URL="http://127.0.0.1:8000"  # Default for local testing
+```
+
+## Implementation Guide
+
+In this tutorial, you'll implement the `ClientRequest` class in `main.py`. The class handles secure communication with a TEE endpoint. We'll go through each method step by step.
+
+### Step 1: Constructor Initialization
+
+The first method to implement is `__init__`. This method initializes the client with the necessary environment variables and sets up the signer.
 
 ```python
-def generate_search_urls(user_prompt: str, model: str = "gpt-4o") -> List[str]:
-    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = (
-        "List me all the URLs you need to search for to get a result for the following prompt: "
-        f"{user_prompt}\n"
-        "Return only the URLs, one per line, no explanations. "
-        "Do not include any other text in your response, and the URLs should be very specific "
-        "to cryptocurrency and financial information that can actually solve the user prompt."
+def __init__(self):
+    self.api_key = os.getenv("PLATFORM_API_KEY")
+    self.platform = os.getenv("PLATFORM")
+    self.model = os.getenv("MODEL")
+    if not self.api_key:
+        raise Exception('API key is required')
+    self.tee_endpoint = os.getenv("TEE_TLS_URL", "http://127.0.0.1:8000")
+    self.signer = Signer()
+    self.init_keys()
+```
+
+### Step 2: Initializing Keys
+
+Next, implement the `init_keys` method to verify attestation and set the public key:
+
+```python
+def init_keys(self):
+    if not self.verify_attestation():
+        raise Exception('Attestation failed')
+    self.public_key = self.att["public_key"].hex()
+```
+
+### Step 3: Verifying Attestation
+
+The `verify_attestation` method is crucial for ensuring you're communicating with a genuine TEE:
+
+```python
+def verify_attestation(self) -> bool:
+    att = requests.get(f"{self.tee_endpoint}/attestation").json()
+    if att.get("mock"):
+        self.att = {
+            "public_key": bytes.fromhex(att["attestation_doc"]["public_key"]),
+        }
+        print("attestation verification result: mock true")
+        return True
+    else:
+        att = att["attestation_doc"]
+        self.att = Verifier.decode_attestation_dict(att)
+        result = Verifier.verify_attestation(att, "./util/root.pem")
+        print("Verifying TEE Enclave Identity:", result)
+        return result
+```
+
+### Step 4: Implementing the Chat Method
+
+The `chat` method handles message encryption and sending to the TEE endpoint:
+
+```python
+def chat(self, message: str):
+    data = {
+        "api_key": self.api_key,
+        "message": message,
+        "platform": self.platform,
+        "ai_model": self.model,
+    }
+
+    nonce = os.urandom(32)
+
+    req = {
+        "nonce": nonce.hex(),
+        "public_key": self.signer.get_public_key_der().hex(),
+        "data": self.signer.encrypt(bytes.fromhex(self.public_key), nonce, json.dumps(data).encode()).hex()
+    }
+    print("request:", req)
+    resp = requests.post(f"{self.tee_endpoint}/talk", json=req).json()
+
+    print()
+    print('prompt:', message)
+    print("response_raw: ", resp)
+    print("final response:", resp["data"]["response"])
+    print("verify signature:", self.verify_sig(resp["data"], resp["sig"]))
+```
+
+### Step 5: Signature Verification
+
+Finally, implement the `verify_sig` method to verify response signatures:
+
+```python
+def verify_sig(self, data, sig) -> bool:
+    return Verifier.verify_signature(
+        pub_key=bytes.fromhex(self.public_key),
+        msg=json.dumps(data).encode(),
+        signature=bytes.fromhex(sig),
     )
-    
-    # Call the LLM and extract URLs from response
-    ...
 ```
 
-The prompt instructs the model to return only URLs, one per line, focused specifically on cryptocurrency information sources.
+## Understanding the Flow
 
-### Step 3: Retrieve Website Data
+1. **Attestation Verification**: Before any communication, the client verifies the TEE's identity by checking its attestation document.
+2. **Secure Communication**:
+   - Client encrypts the message with the TEE's public key
+   - Client sends the encrypted message to the TEE
+   - TEE decrypts the message, processes it, and sends back an encrypted response
+   - Client verifies the signature of the response and decrypts it
 
-Once we have the URLs, we need to retrieve and process the HTML content. This involves:
+## Testing Your Implementation
 
-1. **URL extraction**: Using regex to parse URLs from text
-2. **HTML fetching**: Making HTTP requests to retrieve raw HTML
-3. **HTML cleaning**: Removing unnecessary elements (scripts, styles) to focus on content
+After implementing all the methods, you can test your client by running:
 
-Key functions for this step include:
-
-```python
-def extract_urls(text: str) -> List[str]:
-    """Extract URLs from text using regex."""
-    url_pattern = re.compile(r'https?://\S+')
-    return url_pattern.findall(text)
-
-def clean_html(html: str) -> str:
-    """Remove scripts, styles, noscript, and comments, but keep semantic tags."""
-    # Use BeautifulSoup to parse and clean HTML
-    ...
-
-def fetch_html(url: str) -> str:
-    """Fetch and process HTML content from a URL."""
-    # Make HTTP request and clean the response
-    ...
+```bash
+python main.py
 ```
 
-The cleaned HTML is much smaller and more focused on the actual content, which helps improve the quality of the LLM's analysis while reducing token usage.
-
-### Step 4: Analyze Individual Sources
-
-With the HTML content retrieved and cleaned, we analyze each source individually using the LLM. The `summarize_source()` function handles this step:
-
-```python
-def summarize_source(html: str, user_prompt: str, model: str = "gpt-4o") -> str:
-    """Summarize content from a single source based on the user prompt."""
-    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
-    # Truncate HTML if needed to fit context window
-    truncated_html = html[:12000]
-    
-    prompt = (
-        f"Given the following HTML content from a cryptocurrency website, answer the user prompt: '{user_prompt}'. "
-        "Focus on extracting relevant cryptocurrency information, prices, trends, or metrics. "
-        "If the content is not useful, say so.\n\n"
-        f"{truncated_html}"
-    )
-    
-    # Call LLM to analyze the content
-    ...
-```
-
-This step creates a separate analysis for each source, focusing specifically on the user's original question.
-
-### Step 5: Create Comprehensive Summary
-
-Finally, we combine all the individual source analyses into a comprehensive final summary using the `create_final_summary()` function:
-
-```python
-def create_final_summary(source_summaries: Dict[str, str], user_prompt: str, model: str = "gpt-4o") -> str:
-    """Create a final summary from all source summaries."""
-    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
-    # Format all source summaries
-    formatted = ""
-    for i, (url, summary) in enumerate(source_summaries.items(), 1):
-        formatted += f"Source {i}: {url}\n{summary}\n\n"
-    
-    prompt = (
-        f"Based on the following cryptocurrency research information from several sources, create a comprehensive answer to the user's question: '{user_prompt}'. "
-        "Provide specific details about prices, trends, or metrics mentioned. "
-        "Format your response as a clear, concise report with bullet points for key insights.\n\n"
-        f"{formatted}"
-    )
-    
-    # Call LLM to create the final summary
-    ...
-```
-
-This produces a well-structured final report that directly addresses the user's original question.
-
-## Running the Coinbot
-
-To run the AG2 Coinbot:
-
-1. Ensure you have the required dependencies installed:
-   ```
-   pip install -r requirements.txt
-   ```
-
-2. Set your OpenAI API key in a `.env` file:
-   ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
-
-3. Run the coinbot:
-   ```
-   python ag2_coinbot_tutorial.py
-   ```
-
-4. Enter your cryptocurrency research question when prompted.
-
-## Example Usage
-
-Here's an example of how to use the coinbot:
-
-```
-AG2 Coinbot: Cryptocurrency Research Assistant
-------------------------------------------
-Type 'exit' to quit
-
-What cryptocurrency information would you like to research? What is the current state of Ethereum layer 2 solutions?
-
-[Step 1] Generating relevant cryptocurrency research URLs...
-Found 4 relevant sources to research.
-
-[Step 2] Fetching content from: https://ethereum.org/en/layer-2/
-Token count for https://ethereum.org/en/layer-2/: Original=45678, Processed=12345, Reduction=73.0%
-
-...
-
-[Final Cryptocurrency Analysis]
-- Ethereum layer 2 solutions are scaling technologies built on top of Ethereum that improve transaction throughput and reduce gas fees
-- The ecosystem currently has several major players including Optimism, Arbitrum, and zkSync
-- Total Value Locked (TVL) across all L2s is approximately $X billion as of [date]
-- Recent developments include...
-```
+This will send a sample query "BTC price right now" to the TEE endpoint.
 
 ## Conclusion
 
-This tutorial has demonstrated how to build a simple but powerful cryptocurrency research assistant using the OpenAI API. The multi-step process allows for targeted information gathering, processing, and synthesis to answer user queries effectively. 
+In this tutorial, you've learned how to implement secure communication with a TEE endpoint. You've built a client that:
+- Verifies the identity of a TEE using attestation
+- Establishes secure communication using encrypted channels
+- Sends encrypted messages and verifies signed responses
+
+This approach ensures that sensitive data remains protected during transmission and processing, which is essential for applications requiring high security and privacy guarantees.

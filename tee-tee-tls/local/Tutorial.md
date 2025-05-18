@@ -18,6 +18,7 @@ For this tutorial, you'll be working in the `tee-tee-tls/local/workspace` direct
 - `util/`: Directory containing helper utilities:
   - `signer.py`: Provides encryption and signing capabilities
   - `verifier.py`: Offers verification functionality for attestation and signatures
+  - `root.pem`: Root certificate for attestation verification
 - `requirements.txt`: Lists the required dependencies
 
 ## What is TEE?
@@ -44,6 +45,8 @@ export TEE_TLS_URL="http://127.0.0.1:8000"  # Default for local testing
 ## Implementation Guide
 
 In this tutorial, you'll implement the `ClientRequest` class in `main.py`. The class handles secure communication with a TEE endpoint. We'll go through each method step by step.
+
+Note: The `verify_attestation` method has already been implemented for you, as attestation verification is a complex process. You'll focus on implementing the remaining methods.
 
 ### Step 1: Constructor Initialization
 
@@ -72,12 +75,13 @@ def init_keys(self):
     self.public_key = self.att["public_key"].hex()
 ```
 
-### Step 3: Verifying Attestation
+### Step 3: Understanding Attestation Verification
 
-The `verify_attestation` method is crucial for ensuring you're communicating with a genuine TEE:
+The `verify_attestation` method is crucial for ensuring you're communicating with a genuine TEE. This method has been implemented for you:
 
 ```python
 def verify_attestation(self) -> bool:
+    # Get the attestation document from the TEE endpoint
     att = requests.get(f"{self.tee_endpoint}/attestation").json()
     if att.get("mock"):
         self.att = {
@@ -92,6 +96,12 @@ def verify_attestation(self) -> bool:
         print("Verifying TEE Enclave Identity:", result)
         return result
 ```
+
+This method:
+1. Requests an attestation document from the TEE endpoint
+2. Checks if the attestation is in "mock" mode (for testing)
+3. If not in mock mode, verifies the attestation using the provided Verifier
+4. Returns the verification result
 
 ### Step 4: Implementing the Chat Method
 
@@ -113,14 +123,25 @@ def chat(self, message: str):
         "public_key": self.signer.get_public_key_der().hex(),
         "data": self.signer.encrypt(bytes.fromhex(self.public_key), nonce, json.dumps(data).encode()).hex()
     }
-    print("request:", req)
+    print("Sending encrypted request to TEE endpoint...")
     resp = requests.post(f"{self.tee_endpoint}/talk", json=req).json()
 
     print()
-    print('prompt:', message)
-    print("response_raw: ", resp)
-    print("final response:", resp["data"]["response"])
-    print("verify signature:", self.verify_sig(resp["data"], resp["sig"]))
+    print('Prompt:', message)
+    print("Response received from TEE endpoint")
+    
+    # Display the final response
+    final_response = resp["data"]["response"]
+    print("\nResponse from TEE:")
+    print("-" * 50)
+    print(final_response)
+    print("-" * 50)
+    
+    # Verify the signature
+    sig_verification = self.verify_sig(resp["data"], resp["sig"])
+    print(f"Signature verification: {'Successful' if sig_verification else 'Failed'}")
+    
+    return final_response
 ```
 
 ### Step 5: Signature Verification
@@ -135,6 +156,27 @@ def verify_sig(self, data, sig) -> bool:
         signature=bytes.fromhex(sig),
     )
 ```
+
+### Step 6: Enhancing the Main Function (Optional)
+
+To make your client more interactive, you can modify the main block to accept user prompts:
+
+```python
+if __name__ == '__main__':
+    # Initialize the client
+    client = ClientRequest()
+    
+    # Get prompt from command line arguments or user input
+    if len(sys.argv) > 1:
+        prompt = " ".join(sys.argv[1:])
+    else:
+        prompt = input("Enter your prompt for the TEE chatbot: ")
+    
+    # Send the prompt to the TEE endpoint
+    client.chat(prompt)
+```
+
+Don't forget to add `import sys` at the top of the file if you implement this enhancement.
 
 ## Understanding the Flow
 
@@ -153,13 +195,19 @@ After implementing all the methods, you can test your client by running:
 python main.py
 ```
 
-This will send a sample query "BTC price right now" to the TEE endpoint.
+This will send a sample query "BTC price right now" to the TEE endpoint by default. If you've implemented the enhanced main function, you can provide your own prompt:
+
+```bash
+python main.py "What is the current Bitcoin price?"
+```
 
 ## Conclusion
 
 In this tutorial, you've learned how to implement secure communication with a TEE endpoint. You've built a client that:
-- Verifies the identity of a TEE using attestation
+- Verifies the identity of a TEE using attestation (using the provided implementation)
 - Establishes secure communication using encrypted channels
 - Sends encrypted messages and verifies signed responses
 
 This approach ensures that sensitive data remains protected during transmission and processing, which is essential for applications requiring high security and privacy guarantees.
+
+The utility classes (`Signer` and `Verifier`) handle the complex cryptographic operations, allowing you to focus on the application logic. This separation of concerns makes the code more maintainable and easier to understand.

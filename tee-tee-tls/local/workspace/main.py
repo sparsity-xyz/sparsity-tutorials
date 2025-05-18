@@ -27,11 +27,20 @@ class ClientRequest:
         pass
 
     def verify_attestation(self) -> bool:
-        # TODO: Get the attestation document from the TEE endpoint
-        # Hint: Make a GET request to "{tee_endpoint}/attestation"
-        # If mock is true, just parse the public key and return True
-        # Otherwise, verify the attestation using the Verifier
-        pass
+        # Get the attestation document from the TEE endpoint
+        att = requests.get(f"{self.tee_endpoint}/attestation").json()
+        if att.get("mock"):
+            self.att = {
+                "public_key": bytes.fromhex(att["attestation_doc"]["public_key"]),
+            }
+            print("attestation verification result: mock true")
+            return True
+        else:
+            att = att["attestation_doc"]
+            self.att = Verifier.decode_attestation_dict(att)
+            result = Verifier.verify_attestation(att, "./util/root.pem")
+            print("Verifying TEE Enclave Identity:", result)
+            return result
 
     def chat(self, message: str):
         # TODO: Implement the chat functionality that sends a message to the TEE endpoint

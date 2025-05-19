@@ -2,6 +2,19 @@
 
 Welcome! This repository is a collection of hands-on tutorials to help you learn how the Sparsity infrastructure works and how to build secure, tool-using AI agents on top of it.
 
+---
+
+## ⚙️ Requirements
+
+Before you begin, make sure you have the following:
+- **OpenAI API key** (or Gemini API key)
+- **Python >= 3.10**
+- **Docker**
+- **make**
+- (optional) **venv** (Python virtual environment)
+
+---
+
 Below is the recommended order for working through the tutorials. Each step introduces new features and concepts, and each project has its own detailed `Tutorial.md`.
 
 ---

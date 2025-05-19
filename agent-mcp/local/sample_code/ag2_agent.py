@@ -1,24 +1,25 @@
+import asyncio
+import os
 from pathlib import Path
-
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.sse import sse_client
-from mcp.client.stdio import stdio_client
 
 from autogen import LLMConfig
 from autogen.agentchat import AssistantAgent
 from autogen.mcp import create_toolkit
-import asyncio
 from dotenv import load_dotenv
-import os
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.sse import sse_client
+from mcp.client.stdio import stdio_client
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+
 async def create_toolkit_and_run(session: ClientSession) -> None:
     # Create a toolkit with available MCP tools
     toolkit = await create_toolkit(session=session)
-    agent = AssistantAgent(name="assistant", llm_config=LLMConfig(model="gpt-4o-mini", api_type="openai",api_key=OPENAI_API_KEY))
+    agent = AssistantAgent(name="assistant", llm_config=LLMConfig(
+        model="gpt-4o-mini", api_type="openai", api_key=OPENAI_API_KEY))
 
     # Make a request using the MCP tool
     result = await agent.a_run(

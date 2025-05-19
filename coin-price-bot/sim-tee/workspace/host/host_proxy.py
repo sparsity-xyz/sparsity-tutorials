@@ -1,5 +1,5 @@
-from typing import Optional
 import asyncio
+from typing import Optional
 
 from util.log import logger
 from util.server import Handler
@@ -7,7 +7,7 @@ from util.server import Handler
 
 class HostProxyHandler(Handler):
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        #TODO: Implement HostProxyHandler
+        # TODO: Implement HostProxyHandler
         pass
 
     @staticmethod

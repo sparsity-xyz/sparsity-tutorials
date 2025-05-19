@@ -1,7 +1,7 @@
-import os
 import abc
-import socket
 import asyncio
+import os
+import socket
 
 
 class Client(abc.ABC):
@@ -57,7 +57,7 @@ class VSockClient(Client):
         return await asyncio.open_connection(sock=sock)
 
 
-HOST_CID = 2 # socket.VMADDR_CID_HOST
+HOST_CID = 2  # socket.VMADDR_CID_HOST
 
 
 class EnclaveClient(VSockClient):

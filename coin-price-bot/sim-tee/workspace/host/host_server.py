@@ -11,5 +11,5 @@ class HostConnectionHandler(Handler):
         self.client_generator = client_generator
 
     async def handle_connection(self, reader, writer):
-        #TODO: Implement HostConnectionHandler
+        # TODO: Implement HostConnectionHandler
         pass

@@ -1,16 +1,15 @@
 import argparse
+import multiprocessing
 import os
 import signal
-import multiprocessing
 from multiprocessing import Process
 
 import uvicorn
-
 from app import APP
 from loopback_server import HTTPSServer, LoopbackHandler
-from util.client import VSockClient, TCPClient, HOST_CID
-from util.server import Server, ENCLAVE_SERVER_PORT, HOST_PROXY_SERVER_PORT
+from util.client import HOST_CID, TCPClient, VSockClient
 from util.log import logger
+from util.server import ENCLAVE_SERVER_PORT, HOST_PROXY_SERVER_PORT, Server
 
 
 def run_app(vsock):
@@ -34,7 +33,8 @@ def run_loopback_server(vsock):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--vsock", action="store_true", help="Enable vsock mode (optional)")
+    parser.add_argument("--vsock", action="store_true",
+                        help="Enable vsock mode (optional)")
     args = parser.parse_args()
 
     p1 = Process(target=run_app, args=(args.vsock,))

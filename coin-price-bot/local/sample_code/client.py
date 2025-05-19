@@ -1,7 +1,8 @@
 import json
 import os
-import requests
 import re
+
+import requests
 from util.signer import Signer
 from util.verifier import Verifier
 
@@ -108,7 +109,8 @@ class ClientRequest:
                 "public_key": self.signer.get_public_key_der().hex(),
                 "data": self.signer.encrypt(bytes.fromhex(self.public_key), nonce, json.dumps(data).encode()).hex()
             }
-            summary_resp = requests.post(f"{self.tee_endpoint}/talk", json=req).json()
+            summary_resp = requests.post(
+                f"{self.tee_endpoint}/talk", json=req).json()
             print(f"\nSummary for {url}:", summary_resp)
             summaries[url] = summary_resp["data"]["response"]
 
@@ -133,9 +135,11 @@ class ClientRequest:
             "public_key": self.signer.get_public_key_der().hex(),
             "data": self.signer.encrypt(bytes.fromhex(self.public_key), nonce, json.dumps(data).encode()).hex()
         }
-        final_resp = requests.post(f"{self.tee_endpoint}/talk", json=req).json()
+        final_resp = requests.post(
+            f"{self.tee_endpoint}/talk", json=req).json()
         print("\nFinal synthesized answer:", final_resp["data"]["response"])
-        print("verify signature:", self.verify_sig(final_resp["data"], final_resp["sig"]))
+        print("verify signature:", self.verify_sig(
+            final_resp["data"], final_resp["sig"]))
 
         return final_resp["data"]["response"]
 

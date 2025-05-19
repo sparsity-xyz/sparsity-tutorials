@@ -1,8 +1,9 @@
 import re
+
 import requests
 from bs4 import BeautifulSoup, Comment
-
 from util.log import logger
+
 
 def url_prompt(user_prompt: str) -> str:
     return (
@@ -14,11 +15,13 @@ def url_prompt(user_prompt: str) -> str:
         "I will do visit the websites myself, so just give me the URLS. NEVER say you can't provide any URLs."
     )
 
+
 def summary_prompt(user_prompt: str, url: str, html: str) -> str:
     return (
         f"Summarize the following HTML content from {url} regarding the user prompt: '{user_prompt}'. "
         "If the content is not useful, say so.\n\n" + html[:10000]
     )
+
 
 def final_summary_prompt(user_prompt: str, url_summaries: str) -> str:
     return (
@@ -26,12 +29,13 @@ def final_summary_prompt(user_prompt: str, url_summaries: str) -> str:
         "If the content is not useful, say so.\n\n" + url_summaries
     )
 
+
 def extract_urls(text: str) -> list[str]:
     # Simple regex to extract URLs from text
     url_pattern = re.compile(r'https?://\S+')
     return url_pattern.findall(text)
 
-    
+
 def custom_get(url):
     try:
         return requests.get(url, verify="/usr/local/share/ca-certificates/Certificate.crt").json()
@@ -39,12 +43,14 @@ def custom_get(url):
         logger.error(f"Failed to get {url}: {e}")
         return None
 
+
 def custom_post(url, data):
     try:
         return requests.post(url, json=data, verify="/usr/local/share/ca-certificates/Certificate.crt").json()
     except Exception as e:
         logger.error(f"Failed to post {url}: {e}")
         return None
+
 
 def clean_html(html: str) -> str:
     """
@@ -59,6 +65,7 @@ def clean_html(html: str) -> str:
         comment.extract()
     # Return main content
     return str(soup.find('main') or soup.find('article') or soup.body)
+
 
 def fetch_html(url):
     # Fetch the raw HTML from the URL and process it

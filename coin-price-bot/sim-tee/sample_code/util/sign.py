@@ -2,10 +2,10 @@ import json
 import os
 from typing import Union
 
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 
 class Signer:
@@ -49,7 +49,8 @@ class Signer:
         if isinstance(message, str):
             message = message.encode()
         elif isinstance(message, dict) or isinstance(message, list):
-            message = json.dumps(message, separators=(',', ':'), sort_keys=True).encode()
+            message = json.dumps(message, separators=(
+                ',', ':'), sort_keys=True).encode()
         elif not isinstance(message, bytes):
             raise TypeError("Message must be str, dict or bytes")
 
@@ -59,7 +60,8 @@ class Signer:
         )
 
     def encrypt(self, public_key: bytes, nonce: bytes, message: bytes) -> bytes:
-        shared_key = self.private_key.exchange(ec.ECDH(), serialization.load_der_public_key(public_key))
+        shared_key = self.private_key.exchange(
+            ec.ECDH(), serialization.load_der_public_key(public_key))
         aes_key = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
@@ -70,7 +72,8 @@ class Signer:
 
     def decrypt(self, public_key: bytes, nonce: bytes, data: bytes) -> bytes:
         # ECDH exchange key
-        shared_key = self.private_key.exchange(ec.ECDH(), serialization.load_der_public_key(public_key))
+        shared_key = self.private_key.exchange(
+            ec.ECDH(), serialization.load_der_public_key(public_key))
         # derive AES key
         aes_key = HKDF(
             algorithm=hashes.SHA256(),

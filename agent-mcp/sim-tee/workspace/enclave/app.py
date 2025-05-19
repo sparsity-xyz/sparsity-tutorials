@@ -1,24 +1,22 @@
-import json
 import argparse
-import time
 import dataclasses
+import json
 import os
+import time
+
 import requests
 import uvicorn
-
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
 from attestation import FixedKeyManager, MockFixedKeyManager
-from util.server import Server, ENCLAVE_SERVER_PORT
-from util.log import logger
-
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
 from autogen import LLMConfig
 from autogen.agentchat import AssistantAgent
 from autogen.mcp import create_toolkit
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from pydantic import BaseModel
+from util.log import logger
+from util.server import ENCLAVE_SERVER_PORT, Server
 
 HexStr = str
 
@@ -45,7 +43,7 @@ class APP:
     key: FixedKeyManager
     init: bool = False
 
-    def __init__(self, vsock: bool=False):
+    def __init__(self, vsock: bool = False):
         self.vsock = vsock
         self.app = FastAPI()
         self.init_router()
@@ -53,7 +51,8 @@ class APP:
 
     def init_router(self):
         self.app.add_api_route("/ping", self.ping, methods=["GET"])
-        self.app.add_api_route("/attestation", self.attestation, methods=["GET"])
+        self.app.add_api_route(
+            "/attestation", self.attestation, methods=["GET"])
         self.app.add_api_route("/query", self.test_query, methods=["GET"])
         self.app.add_api_route("/talk", self.talk_to_ai, methods=["POST"])
 
@@ -71,10 +70,10 @@ class APP:
                 "attestation_doc": self.key.fixed_document,
                 "mock": True
             })
-    
+
     async def create_toolkit_and_run(self, session: ClientSession, api_key: str, message: str):
         # TODO: Implement the toolkit creation and agent execution
-        # 
+        #
         # Hint 1: Use create_toolkit() to create a toolkit using the provided session
         # Hint 2: Create an AssistantAgent with appropriate LLMConfig (model, api_type, api_key)
         # Hint 3: Run the agent with the user's message and the toolkit's tools
@@ -85,7 +84,7 @@ class APP:
         # 2. Initialize an AI assistant agent with the provided API key
         # 3. Run the agent with the user's message and toolkit
         # 4. Process and return the result
-        
+
         pass
 
     async def talk_to_ai(self, req: ChatRequest):
@@ -107,7 +106,7 @@ class APP:
         # 5. Initialize the session and create/run the toolkit
         # 6. Get the messages from the result
         # 7. Return a signed response using self.response()
-        
+
         # Begin with input validation
         nonce = bytes.fromhex(req.nonce)
         if len(nonce) < 8:
@@ -130,9 +129,11 @@ class APP:
             "data": data,
         })
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--vsock", action="store_true", help="Enable vsock mode (optional)")
+    parser.add_argument("--vsock", action="store_true",
+                        help="Enable vsock mode (optional)")
     args = parser.parse_args()
 
     app = APP(args.vsock)

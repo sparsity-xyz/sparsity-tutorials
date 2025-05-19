@@ -1,20 +1,23 @@
 import argparse
+import multiprocessing
 import os
 import signal
-import multiprocessing
 from multiprocessing import Process
 
-from host_server import HostConnectionHandler
 from host_proxy import HostProxyHandler
-from util.client import VSockClient, TCPClient
-from util.server import Server, ENCLAVE_SERVER_PORT, HOST_SERVER_PORT, HOST_PROXY_SERVER_PORT
+from host_server import HostConnectionHandler
+from util.client import TCPClient, VSockClient
 from util.log import logger
+from util.server import (ENCLAVE_SERVER_PORT, HOST_PROXY_SERVER_PORT,
+                         HOST_SERVER_PORT, Server)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--vsock", action="store_true", help="Enable vsock mode (optional)")
-    parser.add_argument("--cid",type=int,default=None, help="Enclave CID (optional)")
+    parser.add_argument("--vsock", action="store_true",
+                        help="Enable vsock mode (optional)")
+    parser.add_argument("--cid", type=int, default=None,
+                        help="Enclave CID (optional)")
     args = parser.parse_args()
 
     if args.vsock:

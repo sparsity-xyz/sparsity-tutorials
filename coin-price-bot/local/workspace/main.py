@@ -1,5 +1,6 @@
-from client import ClientRequest
 import os
+
+from client import ClientRequest
 
 if __name__ == '__main__':
     # Get TEE_TLS_URL from environment variable, use default value if not set

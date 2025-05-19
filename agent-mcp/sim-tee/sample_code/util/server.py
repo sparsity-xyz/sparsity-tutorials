@@ -1,15 +1,14 @@
-import os
 import asyncio
-import socket
-import signal
-import multiprocessing
-from multiprocessing import Process
-from multiprocessing.reduction import send_handle, recv_handle
-import pickle
 import errno
+import multiprocessing
+import os
+import pickle
+import signal
+import socket
+from multiprocessing import Process
+from multiprocessing.reduction import recv_handle, send_handle
 
 from util.log import logger
-
 
 HOST_SERVER_PORT = 8000
 HOST_PROXY_SERVER_PORT = 9981
@@ -67,7 +66,7 @@ class Server:
     processes: list
     running = True
 
-    def __init__(self, server_port: int, conn_handler: Handler=None, process_num: int = 1, vsock=False):
+    def __init__(self, server_port: int, conn_handler: Handler = None, process_num: int = 1, vsock=False):
         self.server_port = server_port
         self.vsock = vsock
         if self.vsock:
@@ -97,7 +96,8 @@ class Server:
         self.parent_conn, self.child_conn = multiprocessing.Pipe()
 
     def start(self):
-        logger.info(f"server listening on host=127.0.0.1, port={self.server_port}, mode: {'vsock' if self.vsock else 'tcp'}, num: {self.process_num}")
+        logger.info(
+            f"server listening on host=127.0.0.1, port={self.server_port}, mode: {'vsock' if self.vsock else 'tcp'}, num: {self.process_num}")
         os.setpgid(0, 0)
         signal.signal(signal.SIGINT, lambda s, f: self.shutdown())
         signal.signal(signal.SIGTERM, lambda s, f: self.shutdown())
@@ -112,7 +112,8 @@ class Server:
             self.start_one_worker()
 
     def start_one_worker(self):
-        p = Process(target=worker, args=(self.child_conn, self.family, pickle.dumps(self.handler), ))
+        p = Process(target=worker, args=(self.child_conn,
+                    self.family, pickle.dumps(self.handler), ))
         p.start()
         logger.info(f"worker {p.pid} started.")
         self.processes.append(p)

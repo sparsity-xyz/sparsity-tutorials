@@ -1,5 +1,5 @@
-from typing import Optional
 import asyncio
+from typing import Optional
 
 from util.log import logger
 from util.server import Handler

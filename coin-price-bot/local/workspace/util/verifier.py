@@ -1,18 +1,18 @@
-import json
 import base64
+import json
 from typing import Union
 
 import cbor2
-from pycose.messages import CoseMessage
-from pycose.keys import EC2Key
-from pycose.keys.keyops import VerifyOp
-from pycose.keys.curves import P384
-from pycose.algorithms import Es384
-from OpenSSL import crypto
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
 from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from OpenSSL import crypto
+from pycose.algorithms import Es384
+from pycose.keys import EC2Key
+from pycose.keys.curves import P384
+from pycose.keys.keyops import VerifyOp
+from pycose.messages import CoseMessage
 
 
 class Verifier:
@@ -24,11 +24,13 @@ class Verifier:
 
     @staticmethod
     def verify_signature(pub_key: bytes, msg: Union[bytes, str, dict], signature: bytes) -> bool:
-        pub_key = serialization.load_der_public_key(pub_key, backend=default_backend())
+        pub_key = serialization.load_der_public_key(
+            pub_key, backend=default_backend())
         if isinstance(msg, str):
             msg = msg.encode()
         elif isinstance(msg, dict) or isinstance(msg, list):
-            msg = json.dumps(msg, separators=(',', ':'), sort_keys=True).encode()
+            msg = json.dumps(msg, separators=(',', ':'),
+                             sort_keys=True).encode()
         elif not isinstance(msg, bytes):
             raise TypeError("Message must be str, dict or bytes")
         try:
@@ -79,7 +81,8 @@ class Verifier:
         # Step 5: Build cert chain and verify against CA bundle
         store = crypto.X509Store()
         for inter_der in att_doc.get("cabundle", []):
-            inter_cert = crypto.load_certificate(crypto.FILETYPE_ASN1, inter_der)
+            inter_cert = crypto.load_certificate(
+                crypto.FILETYPE_ASN1, inter_der)
             store.add_cert(inter_cert)
 
         # Load root CA
@@ -104,7 +107,8 @@ class Verifier:
 
     @staticmethod
     def decode_attestation_dict(att_doc: str) -> dict:
-        tagged = cbor2.dumps(cbor2.CBORTag(18, cbor2.loads(base64.b64decode(att_doc))))
+        tagged = cbor2.dumps(cbor2.CBORTag(
+            18, cbor2.loads(base64.b64decode(att_doc))))
         cose_msg = CoseMessage.decode(tagged)
         payload = cose_msg.payload
         return cbor2.loads(payload)
@@ -120,6 +124,8 @@ if __name__ == '__main__':
     print(Verifier.verify_attestation(attestation_doc))
     print(Verifier.verify_signature(
         pub_key=bytes.fromhex("3076301006072a8648ce3d020106052b81040022036200045f06b659e1c1e148bdb46112c0a03728aa442d278efa2a90a27945fea26215a9ad769cccec72d9c18c21e028aeb241faf2fb4fdb4fd828179e3e78c1fa0c04282c3688e0adabd537de150d0a76aa3fa110288055e8bbba2fe9d8663a12e43b40"),
-        msg={'platform': 'openai', 'ai_model': 'gpt-4', 'timestamp': 1747364177, 'message': "What's the date today", 'response': "As an AI, I don't have real-time capabilities. Therefore, I can't provide the current date. Please check the date on your device."},
-        signature=bytes.fromhex("3065023100b5075e19ddce6e9d24202534260c5be9dc7254c351bed320874cb695fa431ec176c0330d8861c768e225f42d6462ab1902300754041f7dfddb38bf04085566b358b0241ef197550fb5d4f7894091be9e384434c6d454214a200c39632414f381e37f"),
+        msg={'platform': 'openai', 'ai_model': 'gpt-4', 'timestamp': 1747364177, 'message': "What's the date today",
+             'response': "As an AI, I don't have real-time capabilities. Therefore, I can't provide the current date. Please check the date on your device."},
+        signature=bytes.fromhex(
+            "3065023100b5075e19ddce6e9d24202534260c5be9dc7254c351bed320874cb695fa431ec176c0330d8861c768e225f42d6462ab1902300754041f7dfddb38bf04085566b358b0241ef197550fb5d4f7894091be9e384434c6d454214a200c39632414f381e37f"),
     ))

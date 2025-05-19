@@ -1,8 +1,10 @@
 import re
-import requests
 from bs4 import BeautifulSoup, Comment
 
+import requests
+
 from util.log import logger
+
 
 def url_prompt(user_prompt: str) -> str:
     return (

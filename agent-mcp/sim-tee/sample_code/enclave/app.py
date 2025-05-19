@@ -1,24 +1,25 @@
+import os
 import json
 import argparse
 import time
 import dataclasses
-import os
+
 import requests
 import uvicorn
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-
-from attestation import FixedKeyManager, MockFixedKeyManager
-from util.server import Server, ENCLAVE_SERVER_PORT
-from util.log import logger
-
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from autogen import LLMConfig
 from autogen.agentchat import AssistantAgent
 from autogen.mcp import create_toolkit
+
+from attestation import FixedKeyManager, MockFixedKeyManager
+from util.server import Server, ENCLAVE_SERVER_PORT
+from util.log import logger
+
 
 HexStr = str
 
@@ -131,6 +132,7 @@ class APP:
             "sig": self.key.sign(data).hex(),
             "data": data,
         })
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

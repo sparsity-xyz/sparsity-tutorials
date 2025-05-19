@@ -1,7 +1,9 @@
-import json
 import os
-import requests
+import json
 import re
+
+import requests
+
 from util.signer import Signer
 from util.verifier import Verifier
 

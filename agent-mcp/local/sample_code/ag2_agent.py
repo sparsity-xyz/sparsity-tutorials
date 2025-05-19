@@ -1,3 +1,5 @@
+import os
+import asyncio
 from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
@@ -7,13 +9,13 @@ from mcp.client.stdio import stdio_client
 from autogen import LLMConfig
 from autogen.agentchat import AssistantAgent
 from autogen.mcp import create_toolkit
-import asyncio
 from dotenv import load_dotenv
-import os
+
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 async def create_toolkit_and_run(session: ClientSession) -> None:
     # Create a toolkit with available MCP tools
@@ -22,10 +24,12 @@ async def create_toolkit_and_run(session: ClientSession) -> None:
 
     # Make a request using the MCP tool
     result = await agent.a_run(
-        message="""1. Add 123223 and 456789
-2.Get file content for 'ag2'
-3.Get current date
-4.Get price of AVAX""",
+        message="""
+        1. Add 123223 and 456789
+        2.Get file content for 'ag2'
+        3.Get current date
+        4.Get price of AVAX
+        """,
         tools=toolkit.tools,
         max_turns=2,
         user_input=False,
@@ -48,6 +52,7 @@ async def main():
         # Initialize the connection
         await session.initialize()
         await create_toolkit_and_run(session)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

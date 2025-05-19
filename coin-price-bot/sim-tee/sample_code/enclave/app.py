@@ -3,9 +3,9 @@ import argparse
 import time
 import dataclasses
 import os
+
 import requests
 import uvicorn
-
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -15,8 +15,8 @@ from util.server import Server, ENCLAVE_SERVER_PORT
 from util.log import logger
 from util.verifier import Verifier
 from util.sign import Signer
-
 from utils import url_prompt, extract_urls, custom_get, custom_post, fetch_html, summary_prompt, final_summary_prompt
+
 
 HexStr = str
 

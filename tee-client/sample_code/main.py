@@ -7,7 +7,7 @@ if __name__ == '__main__':
     client = ClientRequest(tee_endpoint=tee_endpoint)
 
     # Example usage with token query agent
-    client.chat("Bitcoin Price today right now")
+    client.chat("Why is TEE secure?")
 
     # Example usage with general chat agent
     # client.chat("Hello")

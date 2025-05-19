@@ -35,17 +35,17 @@ You'll also need to set the following environment variables:
 export PLATFORM_API_KEY="your_api_key"
 export PLATFORM="your_platform" # e.g., openai
 export MODEL="your_model"       # e.g., gpt-4
-export TEE_TLS_URL="http://43.201.52.244:8000"  # Default endpoint provided by Sparsity
+export TEE_TLS_URL="http://127.0.0.1:8000"  # Default endpoint for local testing
 ```
 
-You can check the connection to the TEE_TLS_URL by querying the following endpoint: `http://43.201.52.244:8000/attestation`, which will output something like the following:
+You can check the connection to the TEE_TLS_URL by querying the following endpoint: `http://127.0.0.1:8000/attestation`, which will output something like the following:
 ```
-{"attestation_doc":"hEShATgioFkR76lpbW9kdWxlX2lkeCdpLTA5NzM5OTQ3MWYxOWRmZWMzLWV...
+{"attestation_doc":"hEShATgioFkR76lpbW9kdWxlX2lkeCdpLTA5NzM5OTQ3MWYxOWRmZWMzLWV..."}
 ```
 
 ## Implementation Guide
 
-In this tutorial, you'll complete the `ClientRequest` class in `client.py`. The class handles secure communication with a TEE endpoint. We'll go through each method step by step, using the versions in `coin-price-bot/local/sample_code/client.py` and `sample_code/main.py` as a reference for the completed code.
+In this tutorial, you'll complete the `ClientRequest` class in `client.py`. The class handles secure communication with a TEE endpoint. We'll go through each method step by step, using the versions in `tee-client/sample_code/client.py` and `sample_code/main.py` as a reference for the completed code.
 
 ### Step 1: Constructor Initialization (`__init__`)
 
@@ -178,14 +178,23 @@ python main.py
 
 ## Testing Your Implementation
 
-After implementing all the methods in `coin-price-bot/local/workspace/client.py`, you can test it by running:
+After implementing all the methods in `tee-client/workspace/client.py`, you can test it by running:
 
 ```bash
-python client.py "What is the price of Bitcoin?"
+export PYTHONPATH="$PYTHONPATH:$(pwd)"
+python main.py # edit the prompt inside main.py
 ```
 Or, for interactive mode:
 ```bash
-python client.py
+export PYTHONPATH="$PYTHONPATH:$(pwd)"
+python main.py
+```
+
+If you are testing in the sample_code directory, make sure to set PYTHONPATH accordingly:
+```bash
+cd tee-client/sample_code
+export PYTHONPATH="$PYTHONPATH:$(pwd)"
+python main.py
 ```
 
 ## Conclusion

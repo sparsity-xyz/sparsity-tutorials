@@ -1,4 +1,6 @@
+import json
 import os
+from typing import Union
 
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -40,10 +42,17 @@ class Signer:
         digest.update(self.get_public_key_der())
         return digest.finalize()
 
-    def sign(self, message: bytes) -> bytes:
+    def sign(self, message: Union[bytes, str, dict]) -> bytes:
         """
         Sign a message using the private key (ECDSA P-384 with SHA-384).
         """
+        if isinstance(message, str):
+            message = message.encode()
+        elif isinstance(message, dict) or isinstance(message, list):
+            message = json.dumps(message, separators=(',', ':'), sort_keys=True).encode()
+        elif not isinstance(message, bytes):
+            raise TypeError("Message must be str, dict or bytes")
+
         return self.private_key.sign(
             message,
             ec.ECDSA(hashes.SHA384())

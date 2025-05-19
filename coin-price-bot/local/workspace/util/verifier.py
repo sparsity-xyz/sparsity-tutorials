@@ -1,5 +1,6 @@
 import json
 import base64
+from typing import Union
 
 import cbor2
 from pycose.messages import CoseMessage
@@ -22,8 +23,14 @@ class Verifier:
         return str(obj)
 
     @staticmethod
-    def verify_signature(pub_key: bytes, msg: bytes, signature: bytes) -> bool:
+    def verify_signature(pub_key: bytes, msg: Union[bytes, str, dict], signature: bytes) -> bool:
         pub_key = serialization.load_der_public_key(pub_key, backend=default_backend())
+        if isinstance(msg, str):
+            msg = msg.encode()
+        elif isinstance(msg, dict) or isinstance(msg, list):
+            msg = json.dumps(msg, separators=(',', ':'), sort_keys=True).encode()
+        elif not isinstance(msg, bytes):
+            raise TypeError("Message must be str, dict or bytes")
         try:
             pub_key.verify(signature, msg, ec.ECDSA(hashes.SHA384()))
             return True
@@ -112,7 +119,7 @@ if __name__ == '__main__':
     print(Verifier.decode_attestation_str(attestation_doc))
     print(Verifier.verify_attestation(attestation_doc))
     print(Verifier.verify_signature(
-        pub_key=bytes.fromhex("3076301006072a8648ce3d020106052b8104002203620004548785a5e32ea9dac119ba171b2d831713b17ac9d024ab15aa087c421c4706f82d6d12908d391e958fc85594e6a1444fb2588ebf190669690babf4852e93c8b85993a5e1c8b9ee24251ad565729459a24c68575afde20a9f4e2085426b71fa58"),
-        msg=json.dumps({"serverTime":1745481149237}).encode(),
-        signature=bytes.fromhex("3066023100d768467983e34577bcb34b943f4195eda46f09debeb642a83bf674431b54a64aea90bb5c26e2639c1ee9350ea9c6e98d0231008a2cb16f47eae67919b5e9f8d6c78f03c526991ac85af9206ae3a74d0f94e0a24da7017178047e5f1dc47153102b0d1f"),
+        pub_key=bytes.fromhex("3076301006072a8648ce3d020106052b81040022036200045f06b659e1c1e148bdb46112c0a03728aa442d278efa2a90a27945fea26215a9ad769cccec72d9c18c21e028aeb241faf2fb4fdb4fd828179e3e78c1fa0c04282c3688e0adabd537de150d0a76aa3fa110288055e8bbba2fe9d8663a12e43b40"),
+        msg={'platform': 'openai', 'ai_model': 'gpt-4', 'timestamp': 1747364177, 'message': "What's the date today", 'response': "As an AI, I don't have real-time capabilities. Therefore, I can't provide the current date. Please check the date on your device."},
+        signature=bytes.fromhex("3065023100b5075e19ddce6e9d24202534260c5be9dc7254c351bed320874cb695fa431ec176c0330d8861c768e225f42d6462ab1902300754041f7dfddb38bf04085566b358b0241ef197550fb5d4f7894091be9e384434c6d454214a200c39632414f381e37f"),
     ))

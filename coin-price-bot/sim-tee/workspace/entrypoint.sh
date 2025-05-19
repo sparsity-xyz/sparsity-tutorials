@@ -3,14 +3,8 @@
   LOG=/tmp/tee.log
 
 if [ "$LOCAL" = "true" ]; then
-    echo "MODE: Local"
-
-    echo "nameserver 127.0.0.1" > /etc/resolv.conf
-
-    dnsmasq
-
-    echo "start app"
-    python /app/main.py
+    # TODO: Implement Local mode
+    pass
 else
     echo "MODE: TEE"
 

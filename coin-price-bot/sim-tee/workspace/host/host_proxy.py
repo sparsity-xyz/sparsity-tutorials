@@ -7,37 +7,8 @@ from util.server import Handler
 
 class HostProxyHandler(Handler):
     async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        try:
-            # Peek TLS ClientHello
-            msg_peek = await reader.read(1024)
-            if not msg_peek:
-                logger.warning("Connection closed before data received")
-                writer.close()
-                await writer.wait_closed()
-                return
-
-            sni = self.extract_sni(msg_peek)
-            if sni is None:
-                logger.warning(f"SNI not found")
-                writer.close()
-                await writer.wait_closed()
-                return
-
-            client_reader, client_writer = await asyncio.open_connection(sni, 443)
-
-            client_writer.write(msg_peek)
-            await client_writer.drain()
-
-            # Start piping both ways
-            await asyncio.gather(
-                self.pipe(reader, client_writer),
-                self.pipe(client_reader, writer)
-            )
-
-        except Exception as e:
-            logger.error(f"Handle connection error: {e}")
-            writer.close()
-            await writer.wait_closed()
+        #TODO: Implement HostProxyHandler
+        pass
 
     @staticmethod
     def extract_sni(data: bytes) -> Optional[str]:

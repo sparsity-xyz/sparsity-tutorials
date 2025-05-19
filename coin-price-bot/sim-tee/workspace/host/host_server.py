@@ -11,8 +11,5 @@ class HostConnectionHandler(Handler):
         self.client_generator = client_generator
 
     async def handle_connection(self, reader, writer):
-        client_reader, client_writer = await self.client_generator.async_connect()
-        await asyncio.gather(
-            self.pipe(reader, client_writer),
-            self.pipe(client_reader, writer)
-        )
+        #TODO: Implement HostConnectionHandler
+        pass

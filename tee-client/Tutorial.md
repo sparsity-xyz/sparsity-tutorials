@@ -94,13 +94,12 @@ def verify_attestation(self) -> bool:
         self.att = {
             "public_key": bytes.fromhex(att["attestation_doc"]["public_key"]),
         }
-        print("Attestation verification result: mock true")
+        print("attestation verification result: mock true")
         return True
     else:
-        att_doc_str = att["attestation_doc"] # Assuming server sends it as a string
-        self.att = Verifier.decode_attestation_dict(att_doc_str)
-        # Ensure ./util/root.pem path is correct relative to client.py execution directory
-        result = Verifier.verify_attestation(att_doc_str, "./util/root.pem") 
+        att = att["attestation_doc"]
+        self.att = Verifier.decode_attestation_dict(att)
+        result = Verifier.verify_attestation(att, "./util/root.pem")
         print("Verifying TEE Enclave Identity:", result)
         return result
 ```
@@ -130,26 +129,14 @@ def chat(self, message: str):
         "public_key": self.signer.get_public_key_der().hex(),
         "data": self.signer.encrypt(bytes.fromhex(self.public_key), nonce, json.dumps(data).encode()).hex()
     }
-    print("Sending encrypted request to TEE endpoint...")
     resp = requests.post(f"{self.tee_endpoint}/talk", json=req).json()
 
-    print() # For better readability
-    print('Prompt:', message)
-    print("Response received from TEE endpoint.") # Indicate response received
-    
-    # Extract and display the final response content
-    final_response_content = resp["data"]["response"]
-    print("\nResponse from TEE:")
-    print("-" * 50)
-    print(final_response_content)
-    print("-" * 50)
-    
-    # Verify the signature of the response data
-    # The server signs the content of resp["data"]
-    is_signature_valid = self.verify_sig(resp["data"], resp["sig"])
-    print(f"Signature verification: {'Successful' if is_signature_valid else 'Failed'}")
-    
-    return final_response_content # Return the actual content string
+    print()
+    print('prompt:', message)
+    print("raw response: ", resp)
+    print("verify signature:", self.verify_sig(resp["data"], resp["sig"]))
+
+    return resp
 ```
 
 ### Step 5: Signature Verification (`verify_sig`)
@@ -159,38 +146,29 @@ This method verifies the digital signature of the TEE's response. Your `client.p
 ```python
 # To be implemented/corrected in client.py
 def verify_sig(self, data, sig) -> bool:
-    # The 'data' parameter is the dictionary from resp["data"]
-    # It needs to be serialized to a JSON string and then encoded to bytes to match what was signed.
-    message_to_verify = json.dumps(data).encode()
     return Verifier.verify_signature(
         pub_key=bytes.fromhex(self.public_key),
-        msg=message_to_verify, # Ensure this matches how the server signed it
+        msg=data,
         signature=bytes.fromhex(sig),
     )
 ```
 
-### Step 6: Making the Client Executable (Main Block)
+### Step 6: Using the Provided Main Script for Execution (`main.py`)
 
-To make `client.py` easy to run, add a main execution block at the end of the file. This block will initialize `ClientRequest` and allow users to send queries either via command-line arguments or interactive input. Add `import sys` at the top of `client.py` for this.
+A `main.py` script is already provided in your workspace directory. This script is responsible for:
 
-```python
-# Add this to the end of client.py (and `import sys` at the top)
-if __name__ == '__main__':
-    # Get TEE_TLS_URL from environment variable, use default value if not set
-    tee_endpoint_url = os.getenv("TEE_TLS_URL", "http://127.0.0.1:8000")
-    client = ClientRequest(tee_endpoint=tee_endpoint_url)
-    
-    prompt_message = ""
-    # Get prompt from command line arguments or user input
-    if len(sys.argv) > 1:
-        prompt_message = " ".join(sys.argv[1:])
-    else:
-        prompt_message = input("Enter your prompt for the TEE chatbot: ")
-    
-    if prompt_message:
-        client.chat(prompt_message)
-    else:
-        print("No prompt provided. Exiting.")
+- Importing your `ClientRequest` class from `client.py`
+- Initializing the client with the correct TEE endpoint
+- Handling user input or command-line arguments for the prompt
+- Calling the `chat` method to send the prompt to the TEE
+
+**Do not add any `if __name__ == '__main__':` block to `client.py`.**
+Keep your class implementation and your script entry point (`main.py`) separate for clarity and maintainability.
+
+To run your client, simply use:
+
+```bash
+python main.py
 ```
 
 ## Understanding the Flow

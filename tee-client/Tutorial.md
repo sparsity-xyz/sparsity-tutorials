@@ -35,10 +35,10 @@ You'll also need to set the following environment variables:
 export PLATFORM_API_KEY="your_api_key"
 export PLATFORM="your_platform" # e.g., openai
 export MODEL="your_model"       # e.g., gpt-4
-export TEE_TLS_URL="http://127.0.0.1:8000"  # Default endpoint for local testing
+export TEE_TLS_URL="http://3.38.149.107:8000/"  # Default endpoint provided by sparsity
 ```
 
-You can check the connection to the TEE_TLS_URL by querying the following endpoint: `http://127.0.0.1:8000/attestation`, which will output something like the following:
+You can check the connection to the TEE_TLS_URL by querying the following endpoint: `http://3.38.149.107:8000/attestation`, which will output something like the following:
 ```
 {"attestation_doc":"hEShATgioFkR76lpbW9kdWxlX2lkeCdpLTA5NzM5OTQ3MWYxOWRmZWMzLWV..."}
 ```

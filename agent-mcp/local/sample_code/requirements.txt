@@ -1,0 +1,9 @@
+pyautogen[all]==0.9
+mcp==1.8.1
+python-dotenv==1.0.1
+openai==1.78.1
+asyncio==3.4.3
+google-genai==1.15.0
+vertexai==1.71.1
+ag2==0.9.1.post0
+python-binance==1.0.28
